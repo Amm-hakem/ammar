@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محاكي مقارنة تكاليف الاستئجار والشراء (10 سنوات)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+        input[type=range] {
+            accent-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white py-6 shadow-lg">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-extrabold flex items-center gap-2">
+                    🏠 محاكي الاستئجار مقابل الشراء
+                </h1>
+                <p class="text-blue-200 text-sm mt-1">قارن بدقة بين تملك عقار أو استئجاره واستثمار الفرق على مدى 10 سنوات</p>
+            </div>
+            <div class="mt-4 md:mt-0 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-sm">
+                <span>تحديث تلقائي للنتائج ⚡</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container mx-auto px-4 py-8">
+        
+        <!-- Summary Banner / Result Card -->
+        <div id="summary-banner" class="mb-8 bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-100 transition-all duration-300">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                <div class="md:col-span-2">
+                    <span id="recommendation-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 inline-block mb-2">القرار المالي الأفضل</span>
+                    <h2 id="recommendation-title" class="text-2xl font-bold text-slate-900">جاري الحساب...</h2>
+                    <p id="recommendation-desc" class="text-slate-600 mt-1 text-sm leading-relaxed"></p>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center flex flex-col justify-center">
+                    <span class="text-xs text-slate-500 font-semibold">فرق صافي الثروة لصالح الخيار الأفضل بعد 10 سنوات</span>
+                    <span id="net-worth-diff" class="text-2xl font-black text-blue-600 mt-1">٠ ر.س</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layout: Inputs & Results -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Inputs Sidebar (5 cols) -->
+            <div class="lg:col-span-5 bg-white rounded-2xl shadow-xl p-6 border border-slate-100 space-y-6">
+                <div class="flex justify-between items-center border-b pb-4">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">⚙️ إعدادات المحاكي</h3>
+                    <button onclick="resetDefaults()" class="text-xs text-blue-600 hover:underline font-semibold">إعادة تعيين الافتراضي</button>
+                </div>
+
+                <!-- Section: Property Purchase -->
+                <div class="space-y-4">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">مدخلات الشراء والتمويل</h4>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">سعر الشراء (ر.س)</label>
+                        <input type="number" id="purchasePrice" value="1000000" step="50000" min="100000" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">الدفعة المقدمة (%)</label>
+                            <input type="number" id="downPaymentPercent" value="20" step="1" min="0" max="100" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">معدل الفائدة السنوي (%)</label>
+                            <input type="number" id="interestRate" value="5.5" step="0.1" min="0" max="20" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">مدة القرض (سنوات)</label>
+                        <input type="number" id="loanTerm" value="25" step="1" min="5" max="30" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">تكاليف الشراء/الإغلاق (%)</label>
+                            <input type="number" id="buyingCosts" value="2.0" step="0.5" min="0" max="10" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">تكاليف البيع عند الخروج (%)</label>
+                            <input type="number" id="sellingCosts" value="2.5" step="0.5" min="0" max="10" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Property Ongoing Costs -->
+                <div class="space-y-4 pt-2 border-t">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">مصاريف العقار الشهرية والسنوية</h4>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">رسوم الجمعية (HOA) شهرياً</label>
+                            <input type="number" id="hoaFee" value="500" step="50" min="0" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">الضرائب العقارية السنوية (%)</label>
+                            <input type="number" id="propertyTaxRate" value="0.5" step="0.1" min="0" max="5" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">الصيانة السنوية (%)</label>
+                            <input type="number" id="maintenanceRate" value="1.0" step="0.1" min="0" max="5" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">نمو قيمة العقار السنوي (%)</label>
+                            <input type="number" id="appreciationRate" value="3.0" step="0.5" min="-5" max="15" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Renting & Investment -->
+                <div class="space-y-4 pt-2 border-t">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">الاستئجار والمحافظة الاستثمارية</h4>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">الإيجار الشهري الحالي</label>
+                            <input type="number" id="monthlyRent" value="4500" step="200" min="500" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">زيادة الإيجار السنوية (%)</label>
+                            <input type="number" id="rentInflation" value="3.0" step="0.5" min="0" max="15" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">عائد الاستثمار البديل (للمستأجر) (%)</label>
+                        <input type="number" id="investmentReturn" value="7.0" step="0.5" min="0" max="25" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                        <p class="text-xs text-slate-500 mt-1">عائد استثمار الفرق في الدفعة المقدمة ومدخرات التدفق النقدي.</p>
+                    </div>
+                </div>
+
+                <!-- Section: Tax Deductions -->
+                <div class="space-y-4 pt-2 border-t">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">الخصومات الضريبية (إن وجدت)</h4>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="enableTaxDeduction" class="sr-only peer" onchange="calculate()">
+                            <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    
+                    <div id="tax-section" class="hidden">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">الشريحة الضريبية للمستخدم (%)</label>
+                        <input type="number" id="taxBracket" value="15" step="1" min="0" max="50" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="calculate()">
+                        <p class="text-xs text-slate-500 mt-1">خصم نسبة من فوائد الرهن العقاري والضرائب العقارية.</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Results Panel (7 cols) -->
+            <div class="lg:col-span-7 space-y-8">
+                
+                <!-- Chart Card -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 border border-slate-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-slate-900">📈 مقارنة صافي الثروة على مدى 10 سنوات</h3>
+                        <div class="flex items-center gap-4 text-xs font-semibold">
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-blue-600 rounded-full inline-block"></span> الشراء (صافي الثروة)</span>
+                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-emerald-500 rounded-full inline-block"></span> الاستئجار (المحفظة)</span>
+                        </div>
+                    </div>
+                    <div class="relative h-80 w-full">
+                        <canvas id="netWorthChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Key Metrics Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Buy Metrics -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6 border-t-4 border-blue-600">
+                        <h4 class="font-bold text-slate-800 mb-4 flex items-center justify-between">
+                            <span>🏠 خيار الشراء (نهاية السنة 10)</span>
+                        </h4>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between py-1 border-b border-slate-100">
+                                <span class="text-slate-500">قيمة العقار المتوقعة:</span>
+                                <span id="res-prop-value" class="font-bold text-slate-900">٠ ر.س</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-100">
+                                <span class="text-slate-500">رصيد القرض المتبقي:</span>
+                                <span id="res-loan-balance" class="font-bold text-rose-600">٠ ر.س</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-100">
+                                <span class="text-slate-500">حقوق الملكية (Equity):</span>
+                                <span id="res-equity" class="font-bold text-emerald-600">٠ ر.س</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-100">
+                                <span class="text-slate-500">إجمالي المدفوعات التراكمية:</span>
+                                <span id="res-buy-total-paid" class="font-bold text-slate-900">٠ ر.س</span>
+                            </div>
+                            <div class="flex justify-between py-1 font-semibold text-base pt-1">
+                                <span class="text-slate-700">صافي الثروة عند الخروج:</span>
+                                <span id="res-buy-net-worth" class="text-blue-600 font-extrabold">٠ ر.س</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rent Metrics -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6 border-t-4 border-emerald-500">
+                        <h4 class="font-bold text-slate-800 mb-4 flex items-center justify-between">
+                            <span>🏢 خيار الاستئجار (نهاية السنة 10)</span>
+                        </h4>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between py-1 border-b border-slate-100">
+                                <span class="text-slate-500">رصيد المحفظة الاستثمارية:</span>
+                                <span id="res-portfolio" class="font-bold text-emerald-600">٠ ر.س</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-100">
+                                <span class="text-slate-500">إجمالي الإيجارات المدفوعة:</span>
+                                <span id="res-rent-total-paid" class="font-bold text-slate-900">٠ ر.س</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-100">
+                                <span class="text-slate-500">إجمالي العوائد الاستثمارية:</span>
+                                <span id="res-investment-gains" class="font-bold text-emerald-600">٠ ر.س</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-100">
+                                <span class="text-slate-500">سيولة مرنة بدون التزامات:</span>
+                                <span class="font-bold text-slate-700">متوفرة بالكامل</span>
+                            </div>
+                            <div class="flex justify-between py-1 font-semibold text-base pt-1">
+                                <span class="text-slate-700">صافي الثروة عند الخروج:</span>
+                                <span id="res-rent-net-worth" class="text-emerald-600 font-extrabold">٠ ر.س</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Detailed Yearly Breakdown Table -->
+        <div class="mt-12 bg-white rounded-2xl shadow-xl p-6 border border-slate-100 overflow-hidden">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">📋 الجدول التفصيلي سنة بسنة (10 سنوات)</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-sm">
+                    <thead class="bg-slate-100 text-slate-700 uppercase text-xs tracking-wider">
+                        <tr>
+                            <th class="p-3 rounded-r-xl">السنة</th>
+                            <th class="p-3">قيمة العقار</th>
+                            <th class="p-3">رصيد القرض</th>
+                            <th class="p-3">حقوق الملكية</th>
+                            <th class="p-3">تكاليف الشراء التراكمية</th>
+                            <th class="p-3">إجمالي الإيجار التراكمي</th>
+                            <th class="p-3">محفظة المستأجر</th>
+                            <th class="p-3 rounded-l-xl">الفرق في الثروة لصالح</th>
+                        </tr>
+                    </thead>
+                    <tbody id="breakdown-table-body" class="divide-y divide-slate-100">
+                        <!-- Filled via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-8 mt-16 text-center text-sm">
+        <p>مُحاكي الاستئجار مقابل الشراء المالي — أداة تقديرية لأغراض التخطيط المالي الشخصي.</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        let myChart = null;
+
+        document.getElementById('enableTaxDeduction').addEventListener('change', function() {
+            const taxSection = document.getElementById('tax-section');
+            if(this.checked) {
+                taxSection.classList.remove('hidden');
+            } else {
+                taxSection.classList.add('hidden');
+            }
+            calculate();
+        });
+
+        function resetDefaults() {
+            document.getElementById('purchasePrice').value = 1000000;
+            document.getElementById('downPaymentPercent').value = 20;
+            document.getElementById('interestRate').value = 5.5;
+            document.getElementById('loanTerm').value = 25;
+            document.getElementById('buyingCosts').value = 2.0;
+            document.getElementById('sellingCosts').value = 2.5;
+            document.getElementById('hoaFee').value = 500;
+            document.getElementById('propertyTaxRate').value = 0.5;
+            document.getElementById('maintenanceRate').value = 1.0;
+            document.getElementById('appreciationRate').value = 3.0;
+            document.getElementById('monthlyRent').value = 4500;
+            document.getElementById('rentInflation').value = 3.0;
+            document.getElementById('investmentReturn').value = 7.0;
+            document.getElementById('enableTaxDeduction').checked = false;
+            document.getElementById('tax-section').classList.add('hidden');
+            document.getElementById('taxBracket').value = 15;
+            calculate();
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR', maximumFractionDigits: 0 }).format(amount);
+        }
+
+        function calculate() {
+            const purchasePrice = parseFloat(document.getElementById('purchasePrice').value) || 0;
+            const downPaymentPct = parseFloat(document.getElementById('downPaymentPercent').value) || 0;
+            const annualInterestRate = parseFloat(document.getElementById('interestRate').value) || 0;
+            const loanTermYears = parseFloat(document.getElementById('loanTerm').value) || 25;
+            const buyingCostsPct = parseFloat(document.getElementById('buyingCosts').value) || 0;
+            const sellingCostsPct = parseFloat(document.getElementById('sellingCosts').value) || 0;
+            const hoaMonthly = parseFloat(document.getElementById('hoaFee').value) || 0;
+            const propertyTaxPct = parseFloat(document.getElementById('propertyTaxRate').value) || 0;
+            const maintenancePct = parseFloat(document.getElementById('maintenanceRate').value) || 0;
+            const appreciationPct = parseFloat(document.getElementById('appreciationRate').value) || 0;
+            
+            let currentRent = parseFloat(document.getElementById('monthlyRent').value) || 0;
+            const rentInflationPct = parseFloat(document.getElementById('rentInflation').value) || 0;
+            const investmentReturnPct = parseFloat(document.getElementById('investmentReturn').value) || 0;
+
+            const enableTax = document.getElementById('enableTaxDeduction').checked;
+            const taxBracketPct = enableTax ? (parseFloat(document.getElementById('taxBracket').value) || 0) / 100 : 0;
+
+            const downPayment = purchasePrice * (downPaymentPct / 100);
+            const initialBuyingCosts = purchasePrice * (buyingCostsPct / 100);
+            const loanAmount = purchasePrice - downPayment;
+            
+            const monthlyInterestRate = (annualInterestRate / 100) / 12;
+            const totalPaymentsCount = loanTermYears * 12;
+            let monthlyMortgage = 0;
+            if (monthlyInterestRate > 0) {
+                monthlyMortgage = loanAmount * (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, totalPaymentsCount)) / (Math.pow(1 + monthlyInterestRate, totalPaymentsCount) - 1);
+            } else {
+                monthlyMortgage = loanAmount / totalPaymentsCount;
+            }
+
+            let renterPortfolio = downPayment + initialBuyingCosts;
+
+            let currentLoanBalance = loanAmount;
+            let currentPropertyValue = purchasePrice;
+            
+            let cumulativeBuyPaid = downPayment + initialBuyingCosts;
+            let cumulativeRentPaid = 0;
+
+            let yearlyData = [];
+            let chartLabels = ['البداية (السنة 0)'];
+            let chartBuyNetWorth = [downPayment];
+            let chartRentNetWorth = [renterPortfolio];
+
+            yearlyData.push({
+                year: 0,
+                propValue: purchasePrice,
+                loanBalance: loanAmount,
+                equity: downPayment,
+                buyTotalPaid: cumulativeBuyPaid,
+                rentTotalPaid: 0,
+                renterPortfolio: renterPortfolio,
+                diff: 0,
+                diffWho: 'متساوي'
+            });
+
+            for (let year = 1; year <= 10; year++) {
+                let yearInterestPaid = 0;
+                let yearPrincipalPaid = 0;
+                let yearPropertyTax = currentPropertyValue * (propertyTaxPct / 100);
+                let yearMaintenance = currentPropertyValue * (maintenancePct / 100);
+                let yearHoa = hoaMonthly * 12;
+
+                for (let m = 1; m <= 12; m++) {
+                    if (currentLoanBalance > 0) {
+                        let interestPayment = currentLoanBalance * monthlyInterestRate;
+                        let principalPayment = monthlyMortgage - interestPayment;
+                        if (principalPayment > currentLoanBalance) principalPayment = currentLoanBalance;
+                        
+                        yearInterestPaid += interestPayment;
+                        yearPrincipalPaid += principalPayment;
+                        currentLoanBalance -= principalPayment;
+                    }
+                }
+
+                let taxSavings = 0;
+                if (enableTax) {
+                    let deductibleInterestAndTax = yearInterestPaid + yearPropertyTax;
+                    taxSavings = deductibleInterestAndTax * taxBracketPct;
+                }
+
+                let annualMortgageTotal = monthlyMortgage * 12;
+                let netOwnerCostYear = annualMortgageTotal + yearPropertyTax + yearMaintenance + yearHoa - taxSavings;
+                cumulativeBuyPaid += netOwnerCostYear;
+
+                let annualRentTotal = currentRent * 12;
+                cumulativeRentPaid += annualRentTotal;
+
+                let ownerOutOfPocketThisYear = netOwnerCostYear;
+                if (year === 1) {
+                    ownerOutOfPocketThisYear += downPayment + initialBuyingCosts;
+                }
+                
+                renterPortfolio = renterPortfolio * (1 + (investmentReturnPct / 100));
+                let cashFlowDiff = ownerOutOfPocketThisYear - annualRentTotal;
+                renterPortfolio += cashFlowDiff;
+
+                currentRent *= (1 + (rentInflationPct / 100));
+                currentPropertyValue *= (1 + (appreciationRate / 100));
+
+                let sellingCostsAmount = currentPropertyValue * (sellingCostsPct / 100);
+                let buyerEquity = currentPropertyValue - currentLoanBalance;
+                let buyerNetWorth = buyerEquity - sellingCostsAmount;
+
+                let diff = buyerNetWorth - renterPortfolio;
+
+                chartLabels.push(`السنة ${year}`);
+                chartBuyNetWorth.push(Math.round(buyerNetWorth));
+                chartRentNetWorth.push(Math.round(renterPortfolio));
+
+                yearlyData.push({
+                    year: year,
+                    propValue: currentPropertyValue,
+                    loanBalance: currentLoanBalance,
+                    equity: buyerEquity,
+                    buyTotalPaid: cumulativeBuyPaid,
+                    rentTotalPaid: cumulativeRentPaid,
+                    renterPortfolio: renterPortfolio,
+                    diff: Math.abs(diff),
+                    diffWho: diff >= 0 ? 'الشراء' : 'الاستئجار',
+                    rawDiff: diff
+                });
+            }
+
+            const finalYear = yearlyData[10];
+            const finalBuyNW = chartBuyNetWorth[10];
+            const finalRentNW = chartRentNetWorth[10];
+            const netDiff = Math.abs(finalBuyNW - finalRentNW);
+            const betterOption = finalBuyNW >= finalRentNW ? 'الشراء' : 'الاستئجار';
+
+            document.getElementById('res-prop-value').innerText = formatCurrency(finalYear.propValue);
+            document.getElementById('res-loan-balance').innerText = formatCurrency(finalYear.loanBalance);
+            document.getElementById('res-equity').innerText = formatCurrency(finalYear.equity);
+            document.getElementById('res-buy-total-paid').innerText = formatCurrency(finalYear.buyTotalPaid);
+            document.getElementById('res-buy-net-worth').innerText = formatCurrency(finalBuyNW);
+
+            document.getElementById('res-portfolio').innerText = formatCurrency(finalRentNW);
+            document.getElementById('res-rent-total-paid').innerText = formatCurrency(finalYear.rentTotalPaid);
+            document.getElementById('res-investment-gains').innerText = formatCurrency(finalRentNW - (downPayment + initialBuyingCosts));
+            document.getElementById('res-rent-net-worth').innerText = formatCurrency(finalRentNW);
+
+            document.getElementById('net-worth-diff').innerText = formatCurrency(netDiff);
+
+            const badge = document.getElementById('recommendation-badge');
+            const title = document.getElementById('recommendation-title');
+            const desc = document.getElementById('recommendation-desc');
+            const summaryBanner = document.getElementById('summary-banner');
+
+            if (betterOption === 'الشراء') {
+                badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 inline-block mb-2";
+                badge.innerText = "الخيار الأفضل: شراء العقار";
+                title.innerText = "تملك العقار يحقق ثروة أكبر على مدى 10 سنوات";
+                desc.innerText = `بناءً على المعطيات المدخلة، فإن شراء العقار ونموه الطبيعي يمنحك صافي ثروة أعلى بمقدار ${formatCurrency(netDiff)} مقارنة بالاستئجار واستثمار الفرق في المحفظة.`;
+                summaryBanner.className = "mb-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-6 border-2 border-blue-200 transition-all duration-300";
+            } else {
+                badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 inline-block mb-2";
+                badge.innerText = "الخيار الأفضل: الاستئجار والاستثمار";
+                title.innerText = "الاستئجار واستثمار الدفعة المقدمة يحقق عائداً أعلى";
+                desc.innerText = `بناءً على المعطيات والمدخلات، فإن توجيه الدفعة المقدمة والفرق الشهري لعوائد الاستثمار يوفر لك صافي ثروة أعلى بمقدار ${formatCurrency(netDiff)} مقارنة بالتملك.`;
+                summaryBanner.className = "mb-8 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl shadow-xl p-6 border-2 border-emerald-200 transition-all duration-300";
+            }
+
+            let tableHTML = '';
+            yearlyData.forEach((row) => {
+                tableHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-3 font-bold text-slate-800">السنة ${row.year}</td>
+                        <td class="p-3 text-slate-600">${formatCurrency(row.propValue)}</td>
+                        <td class="p-3 text-rose-600">${formatCurrency(row.loanBalance)}</td>
+                        <td class="p-3 text-emerald-600 font-semibold">${formatCurrency(row.equity)}</td>
+                        <td class="p-3 text-slate-600">${formatCurrency(row.buyTotalPaid)}</td>
+                        <td class="p-3 text-slate-600">${formatCurrency(row.rentTotalPaid)}</td>
+                        <td class="p-3 text-indigo-600 font-semibold">${formatCurrency(row.renterPortfolio)}</td>
+                        <td class="p-3 font-bold ${row.rawDiff >= 0 ? 'text-blue-600' : 'text-emerald-600'}">
+                            ${row.year === 0 ? '-' : `${row.diffWho} (${formatCurrency(row.diff)})`}
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('breakdown-table-body').innerHTML = tableHTML;
+
+            updateChart(chartLabels, chartBuyNetWorth, chartRentNetWorth);
+        }
+
+        function updateChart(labels, buyData, rentData) {
+            const ctx = document.getElementById('netWorthChart').getContext('2d');
+            
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'الشراء (صافي الثروة)',
+                            data: buyData,
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.05)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'الاستئجار (المحفظة)',
+                            data: rentData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR', maximumFractionDigits: 0 }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                font: { family: 'Cairo' },
+                                callback: function(value) {
+                                    if (value >= 1000000) return (value / 1000000).toFixed(1) + ' م.ر.س';
+                                    return (value / 1000).toFixed(0) + ' ألف';
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: { font: { family: 'Cairo' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        window.onload = function() {
+            calculate();
+        };
+    </script>
+</body>
+</html>
